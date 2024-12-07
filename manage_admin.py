@@ -6,7 +6,8 @@ def check_admin_credentials():
     username = input("Enter admin username: ")
     password = getpass("Enter admin password: ")
 
-    admin = Admin.query.filter_by(username=username).first()
+    with app.app_context():  # Ensure the app context is available
+        admin = Admin.query.filter_by(username=username).first()
 
     if admin and bcrypt.check_password_hash(admin.password, password):
         print("Admin credentials are valid.")
@@ -17,7 +18,8 @@ def check_password_match():
     username = input("Enter admin username: ")
     password = getpass("Enter admin password: ")
 
-    admin = Admin.query.filter_by(username=username).first()
+    with app.app_context():  # Ensure the app context is available
+        admin = Admin.query.filter_by(username=username).first()
 
     if admin and bcrypt.check_password_hash(admin.password, password):
         print("Password matches the admin credentials.")
@@ -28,27 +30,31 @@ def add_admin():
     username = input("Enter new admin username: ")
     password = getpass("Enter new password: ")
 
-    # Check if admin with the same username already exists
-    existing_admin = Admin.query.filter_by(username=username).first()
-    if existing_admin:
-        print(f"Admin with username '{username}' already exists.")
-        return
+    with app.app_context():  # Ensure the app context is available
+        # Check if admin with the same username already exists
+        existing_admin = Admin.query.filter_by(username=username).first()
 
-    # Create a new admin user with hashed password
-    hashed_password = bcrypt.generate_password_hash(password).decode("utf-8")
-    new_admin = Admin(username=username, password=hashed_password)
+        if existing_admin:
+            print(f"Admin with username '{username}' already exists.")
+            return
 
-    try:
-        db.session.add(new_admin)
-        db.session.commit()
-        print(f"New admin '{username}' created successfully.")
-    except Exception as e:
-        print(f"Error adding new admin: {e}")
-        db.session.rollback()
+        # Create a new admin user with hashed password
+        hashed_password = bcrypt.generate_password_hash(password).decode("utf-8")
+        new_admin = Admin(username=username, password=hashed_password)
+
+        try:
+            db.session.add(new_admin)
+            db.session.commit()
+            print(f"New admin '{username}' created successfully.")
+        except Exception as e:
+            print(f"Error adding new admin: {e}")
+            db.session.rollback()
 
 def update_admin_password():
     username = input("Enter admin username whose password you want to update: ")
-    admin = Admin.query.filter_by(username=username).first()
+
+    with app.app_context():  # Ensure the app context is available
+        admin = Admin.query.filter_by(username=username).first()
 
     if admin:
         new_password = getpass("Enter new password: ")
@@ -65,7 +71,7 @@ def update_admin_password():
         print(f"No admin found with username '{username}'.")
 
 def show_admins():
-    with app.app_context():  # Ensuring the app context is available
+    with app.app_context():  # Ensure the app context is available
         try:
             admins = Admin.query.all()
 
@@ -74,9 +80,10 @@ def show_admins():
             else:
                 print("List of all admin credentials:")
                 for admin in admins:
-                    print(f"Username: {admin.username}")
+                    print(f"Username: {admin.username}, Password: {admin.password}")
         except Exception as e:
             print(f"Error fetching admins: {e}")
+
 
 def main():
     while True:
