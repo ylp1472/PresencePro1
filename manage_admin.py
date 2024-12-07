@@ -80,10 +80,10 @@ def show_admins():
             else:
                 print("List of all admin credentials:")
                 for admin in admins:
-                    print(f"Username: {admin.username}, Password: {admin.password}")
+                    # Showing both username and hashed password
+                    print(f"Username: {admin.username}, Password (hashed): {admin.password}")
         except Exception as e:
             print(f"Error fetching admins: {e}")
-
 
 def main():
     while True:
