@@ -16,9 +16,10 @@ class Student(db.Model):
     name = db.Column(db.String(100), nullable=False)
     registration_number = db.Column(db.String(20), unique=True, nullable=False)
     face_encoding = db.Column(db.PickleType, nullable=False)
+    # Add cascade deletion for attendance records
+    attendances = db.relationship('Attendance', backref='student', lazy=True, cascade='all, delete-orphan')
 
 class Attendance(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    student_id = db.Column(db.Integer, db.ForeignKey('student.id'), nullable=False)
+    student_id = db.Column(db.Integer, db.ForeignKey('student.id', ondelete='CASCADE'), nullable=False)
     timestamp = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
-    student = db.relationship('Student', backref=db.backref('attendances', lazy=True))
