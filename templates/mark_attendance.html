@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Mark Attendance{% endblock %}
+{% block title %}Mark Attendance Live{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -9,72 +9,41 @@
         width: 100%;
         max-width: 640px;
         margin: 0 auto;
+        border: 2px solid #ddd;
+        border-radius: 8px;
+        overflow: hidden;
     }
-    #video {
+    #video-feed {
         width: 100%;
         height: auto;
+        display: block;
     }
-    #canvas {
-        display: none;
+    .status-container {
+        margin-top: 20px;
+        padding: 15px;
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        text-align: center;
+    }
+    .status-text {
+        color: #28a745;
+        font-size: 1.2em;
+        margin-bottom: 10px;
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<h1 class="mb-4">Mark Attendance</h1>
+<div class="container">
+    <h1 class="mb-4 text-center">Mark Attendance Live</h1>
 
-<div id="video-container">
-    <video id="video" autoplay></video>
-    <canvas id="canvas"></canvas>
+    <div id="video-container" class="mb-4">
+        <img id="video-feed" src="{{ url_for('video_feed') }}" alt="Video Feed">
+    </div>
+
+    <div class="status-container">
+        <p class="status-text">Camera is active and monitoring for faces...</p>
+        <p>Stand in front of the camera to mark your attendance</p>
+    </div>
 </div>
-
-<div class="mt-4 text-center">
-    <button id="capture-btn" class="btn btn-primary">Capture and Mark Attendance</button>
-</div>
-
-<div id="recognition-results" class="mt-4"></div>
-{% endblock %}
-
-{% block extra_js %}
-<script>
-    const video = document.getElementById('video');
-    const canvas = document.getElementById('canvas');
-    const captureBtn = document.getElementById('capture-btn');
-    const recognitionResults = document.getElementById('recognition-results');
-
-    navigator.mediaDevices.getUserMedia({ video: true })
-        .then(stream => {
-            video.srcObject = stream;
-        })
-        .catch(err => {
-            console.error("Error accessing the camera", err);
-        });
-
-    captureBtn.addEventListener('click', () => {
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        canvas.getContext('2d').drawImage(video, 0, 0);
-        
-        canvas.toBlob(blob => {
-            const formData = new FormData();
-            formData.append('image', blob, 'capture.jpg');
-
-            fetch('{{ url_for("process_attendance") }}', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                recognitionResults.innerHTML = `<h3>Recognized Students:</h3><ul>`;
-                data.forEach(student => {
-                    recognitionResults.innerHTML += `<li>${student}</li>`;
-                });
-                recognitionResults.innerHTML += `</ul>`;
-            })
-            .catch(error => {
-                console.error('Error:', error);
-            });
-        }, 'image/jpeg');
-    });
-</script>
 {% endblock %}

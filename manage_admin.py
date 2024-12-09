@@ -55,12 +55,10 @@ def update_admin_password():
 
     with app.app_context():  # Ensure the app context is available
         admin = Admin.query.filter_by(username=username).first()
-
     if admin:
         new_password = getpass("Enter new password: ")
         hashed_password = bcrypt.generate_password_hash(new_password).decode("utf-8")
         admin.password = hashed_password
-
         try:
             db.session.commit()
             print(f"Password for admin '{username}' updated successfully.")
@@ -74,7 +72,6 @@ def show_admins():
     with app.app_context():  # Ensure the app context is available
         try:
             admins = Admin.query.all()
-
             if not admins:
                 print("No admins found in the database.")
             else:
