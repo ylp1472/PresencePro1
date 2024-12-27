@@ -4,4 +4,4 @@ flask-sqlalchemy
 bcrypt
 opencv-python
 face-recognition
-db-sqlit
+sqlite3
