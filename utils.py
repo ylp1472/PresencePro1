@@ -11,29 +11,18 @@ def encode_face(image_file):
         return face_encoding
     return None
 
-def recognize_faces(frame):
-    small_frame = cv2.resize(frame, (0, 0), fx=0.25, fy=0.25)
-    rgb_small_frame = small_frame[:, :, ::-1]
+def recognize_faces(image):
+    # Convert the image to RGB (required by face_recognition)
+    rgb_small_frame = image[:, :, ::-1]  # Convert BGR to RGB
     
+    # Detect faces in the image
     face_locations = face_recognition.face_locations(rgb_small_frame)
-    face_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)
     
-    recognized_students = []
-    
-    students = Student.query.all()
-    known_face_encodings = [student.face_encoding for student in students]
-    known_face_names = [student.name for student in students]
-    
-    for face_encoding in face_encodings:
-        matches = face_recognition.compare_faces(known_face_encodings, face_encoding)
-        name = "Unknown"
-        
-        face_distances = face_recognition.face_distance(known_face_encodings, face_encoding)
-        best_match_index = np.argmin(face_distances)
-        if matches[best_match_index]:
-            name = known_face_names[best_match_index]
-            student = next((s for s in students if s.name == name), None)
-            if student:
-                recognized_students.append(student)
-    
-    return recognized_students
+    # Ensure face_locations is not empty
+    if len(face_locations) > 0:
+        # Get face encodings for each detected face
+        face_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)
+        return face_encodings
+    else:
+        print("erorr recognize_faces")
+        return []
