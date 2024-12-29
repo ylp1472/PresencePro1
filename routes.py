@@ -211,3 +211,55 @@ def process_attendance():
     recognized_names = [student.name for student in recognized_students]
     return jsonify({'status': 'success', 'names': recognized_names})
 
+import face_recognition
+from models import Student
+
+def recognize_faces(img):
+    # Convert the image to RGB (OpenCV uses BGR by default)
+    rgb_img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+
+    # Detect faces and face encodings in the image
+    face_locations = face_recognition.face_locations(rgb_img)
+    face_encodings = face_recognition.face_encodings(rgb_img, face_locations)
+
+    recognized_students = []
+
+    # Loop through each face found in the image
+    for face_encoding in face_encodings:
+        # Compare the face encoding with the stored face encodings in the database
+        students = Student.query.all()  # You can optimize this by only querying the necessary records
+        for student in students:
+            # Compare the captured face encoding with the stored encoding
+            match = face_recognition.compare_faces([student.face_encoding], face_encoding)
+            if match[0]:
+                recognized_students.append(student)
+                break  # Stop once a match is found for this face
+
+    return recognized_students
+import face_recognition
+from models import Student
+
+def recognize_faces(img):
+    # Convert the image to RGB (OpenCV uses BGR by default)
+    rgb_img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+
+    # Detect faces and face encodings in the image
+    face_locations = face_recognition.face_locations(rgb_img)
+    face_encodings = face_recognition.face_encodings(rgb_img, face_locations)
+
+    recognized_students = []
+
+    # Loop through each face found in the image
+    for face_encoding in face_encodings:
+        # Compare the face encoding with the stored face encodings in the database
+        students = Student.query.all()  # You can optimize this by only querying the necessary records
+        for student in students:
+            # Compare the captured face encoding with the stored encoding
+            match = face_recognition.compare_faces([student.face_encoding], face_encoding)
+            if match[0]:
+                recognized_students.append(student)
+                break  # Stop once a match is found for this face
+
+    return recognized_students
+
+
