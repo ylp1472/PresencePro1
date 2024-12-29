@@ -141,3 +141,33 @@ def export_attendance():
     output.headers["Content-Disposition"] = f"attachment; filename=attendance_{start_date.date()}_to_{end_date.date()}.csv"
     output.headers["Content-type"] = "text/csv"
     return output
+
+from flask import Response
+import cv2
+from app import app
+
+# Initialize the video capture object (use 0 for the default webcam)
+video_capture = cv2.VideoCapture(0)
+
+def gen():
+    """Generate frame by frame for video feed."""
+    while True:
+        # Capture frame-by-frame
+        ret, frame = video_capture.read()
+        if not ret:
+            break
+        
+        # Convert frame to JPEG and encode it to send as a response
+        ret, jpeg = cv2.imencode('.jpg', frame)
+        if not ret:
+            continue
+        
+        # Yield the frame as a byte string in the format for MJPEG
+        frame_bytes = jpeg.tobytes()
+        yield (b'--frame\r\n'
+               b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
+
+@app.route('/video_feed')
+def video_feed():
+    """Route to stream video feed."""
+    return Response(gen(), mimetype='multipart/x-mixed-replace; boundary=frame')
