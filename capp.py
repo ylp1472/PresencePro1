@@ -1,4 +1,4 @@
-# First install required packages
+# Install required packages
 !pip install flask flask-sqlalchemy flask-login flask-bcrypt pyngrok
 
 # Import necessary libraries
@@ -8,15 +8,16 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_bcrypt import Bcrypt
 from pyngrok import ngrok
+import subprocess
+import sys
 
-# Save your Flask app code to a file
-%%writefile app.py
-from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
-from flask_login import LoginManager
-from flask_bcrypt import Bcrypt
-import os
+# Configure ngrok with your auth token
+!ngrok config add-authtoken 2Z5fw3woEzIAWAIzv1sfH6yisxU_85ULXXEvrQbDuGPvQ421C
 
+# Kill any existing processes on port 5000
+!kill -9 $(lsof -t -i:5000) 2>/dev/null || true
+
+# Create a Flask application
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY') or 'you-will-never-guess'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
@@ -27,19 +28,24 @@ bcrypt = Bcrypt(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 
+# Import routes after initializing app
 from routes import *
 
-if __name__ == '__main__':
-    app.run()
-
-# Create a new cell and run this to start the server with ngrok
-# Make sure all your route files are uploaded to Colab first
-!ngrok authtoken YOUR_NGROK_AUTH_TOKEN  # Replace with your ngrok auth token
-from pyngrok import ngrok
-
-# Start ngrok
+# Initialize ngrok
 public_url = ngrok.connect(5000)
-print(f' * Public URL: {public_url}')
+print(f'\n * Public URL: {public_url}')
 
-# Run the Flask app
-!python app.py
+# Function to run the Flask app
+def run_flask():
+    try:
+        app.run(port=5000)
+    except Exception as e:
+        print(f"Error running Flask app: {e}")
+        sys.exit(1)
+
+# Run the Flask app in the main thread
+if __name__ == '__main__':
+    print(' * Starting Flask application...')
+    print(f' * Environment: {app.env}')
+    print(f' * Debug mode: {app.debug}')
+    run_flask()
