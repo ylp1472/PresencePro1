@@ -12,17 +12,21 @@ def encode_face(image_file):
     return None
 
 def recognize_faces(image):
-    # Convert the image to RGB (required by face_recognition)
-    rgb_small_frame = image[:, :, ::-1]  # Convert BGR to RGB
-    
-    # Detect faces in the image
-    face_locations = face_recognition.face_locations(rgb_small_frame)
-    
-    # Ensure face_locations is not empty
-    if len(face_locations) > 0:
-        # Get face encodings for each detected face
-        face_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)
-        return face_encodings
-    else:
-        print("erorr recognize_faces")
+    try:
+        # Convert the image to RGB (required by face_recognition)
+        rgb_small_frame = image[:, :, ::-1]  # Convert BGR to RGB
+        
+        # Detect faces in the image
+        face_locations = face_recognition.face_locations(rgb_small_frame)
+        
+        # Ensure face_locations is not empty
+        if len(face_locations) > 0:
+            # Get face encodings for each detected face
+            face_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)
+            return face_encodings
+        else:
+            print("No faces found in the image.")
+            return []
+    except Exception as e:
+        print(f"Error in recognize_faces: {e}")
         return []
