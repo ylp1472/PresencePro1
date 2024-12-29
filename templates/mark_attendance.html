@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Mark Attendance Live{% endblock %}
+{% block title %}Mark Attendance{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -9,59 +9,79 @@
         width: 100%;
         max-width: 640px;
         margin: 0 auto;
-        border: 2px solid #ddd;
-        border-radius: 8px;
-        overflow: hidden;
     }
-    #video-feed {
+    #video {
         width: 100%;
         height: auto;
-        display: block;
     }
-    .status-container {
-        margin-top: 20px;
-        padding: 15px;
-        background-color: #f8f9fa;
-        border-radius: 8px;
-        text-align: center;
-    }
-    .status-text {
-        color: #28a745;
-        font-size: 1.2em;
-        margin-bottom: 10px;
+    #canvas {
+        display: none;
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container">
-    <h1 class="mb-4 text-center">Mark Attendance Live</h1>
+<h1 class="mb-4">Mark Attendance Automatically</h1>
 
-    <div id="video-container" class="mb-4">
-        <video id="video-feed" autoplay></video>
-    </div>
-
-    <div class="status-container">
-        <p class="status-text">Camera is active and monitoring for faces...</p>
-        <p>Stand in front of the camera to mark your attendance</p>
-    </div>
+<div id="video-container">
+    <video id="video" autoplay></video>
+    <canvas id="canvas"></canvas>
 </div>
+
+<div id="recognition-results" class="mt-4 text-center"></div>
+{% endblock %}
 
 {% block extra_js %}
 <script>
-    // Get the video element from the DOM
-    const video = document.getElementById('video-feed');
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const recognitionResults = document.getElementById('recognition-results');
 
-    // Access the user's webcam
+    // Access the webcam stream
     navigator.mediaDevices.getUserMedia({ video: true })
-        .then((stream) => {
-            // Set the video source to the webcam stream
+        .then(stream => {
             video.srcObject = stream;
         })
-        .catch((err) => {
-            console.log("Error accessing camera: " + err);
-            alert("Unable to access the camera. Please grant camera permissions.");
+        .catch(err => {
+            console.error("Error accessing the camera", err);
         });
+
+    // Function to capture the video frame and send it to the backend
+    function captureAndMarkAttendance() {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas.getContext('2d').drawImage(video, 0, 0);
+
+        // Convert the canvas to a Blob (image)
+        canvas.toBlob(blob => {
+            const formData = new FormData();
+            formData.append('image', blob, 'capture.jpg');
+
+            // Send the captured image to the backend
+            fetch('{{ url_for("process_attendance") }}', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Display recognized student names
+                if (data.status === 'success') {
+                    recognitionResults.innerHTML = `<h3>Recognized Students:</h3><ul>`;
+                    data.names.forEach(student => {
+                        recognitionResults.innerHTML += `<li>${student}</li>`;
+                    });
+                    recognitionResults.innerHTML += `</ul>`;
+                } else {
+                    recognitionResults.innerHTML = '<p>No faces recognized, retrying...</p>';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        }, 'image/jpeg');
+    }
+
+    // Capture frames automatically every 5 seconds
+    setInterval(captureAndMarkAttendance, 5000);  // Capture every 5 seconds
 </script>
-{% endblock %}
 {% endblock %}
