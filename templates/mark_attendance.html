@@ -38,7 +38,7 @@
     <h1 class="mb-4 text-center">Mark Attendance Live</h1>
 
     <div id="video-container" class="mb-4">
-        <img id="video-feed" src="{{ url_for('video_feed') }}" alt="Video Feed">
+        <video id="video-feed" autoplay></video>
     </div>
 
     <div class="status-container">
@@ -46,4 +46,22 @@
         <p>Stand in front of the camera to mark your attendance</p>
     </div>
 </div>
+
+{% block extra_js %}
+<script>
+    // Get the video element from the DOM
+    const video = document.getElementById('video-feed');
+
+    // Access the user's webcam
+    navigator.mediaDevices.getUserMedia({ video: true })
+        .then((stream) => {
+            // Set the video source to the webcam stream
+            video.srcObject = stream;
+        })
+        .catch((err) => {
+            console.log("Error accessing camera: " + err);
+            alert("Unable to access the camera. Please grant camera permissions.");
+        });
+</script>
+{% endblock %}
 {% endblock %}
