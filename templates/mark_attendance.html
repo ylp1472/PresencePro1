@@ -38,7 +38,7 @@
     <h1 class="mb-4 text-center">Mark Attendance Live</h1>
 
     <div id="video-container" class="mb-4">
-        <video id="video-feed" autoplay></video>
+        <img id="video-feed" src="{{ url_for('video_feed') }}" alt="Video Feed">
     </div>
 
     <div class="status-container">
@@ -47,21 +47,44 @@
     </div>
 </div>
 
-{% block extra_js %}
 <script>
-    // Get the video element from the DOM
+// Capture a frame from the video feed and send it to the backend
+function captureAndMarkAttendance() {
     const video = document.getElementById('video-feed');
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
 
-    // Access the user's webcam
-    navigator.mediaDevices.getUserMedia({ video: true })
-        .then((stream) => {
-            // Set the video source to the webcam stream
-            video.srcObject = stream;
-        })
-        .catch((err) => {
-            console.log("Error accessing camera: " + err);
-            alert("Unable to access the camera. Please grant camera permissions.");
-        });
+    // Set canvas dimensions to match the video feed
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    // Draw the current video frame to the canvas
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    // Convert canvas to image data (base64)
+    const imageData = canvas.toDataURL('image/jpeg');
+
+    // Send the image data to the server
+    fetch('/process_attendance', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ image: imageData }),
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            alert('Attendance marked for: ' + data.names.join(', '));
+        } else {
+            alert('No matching face found.');
+        }
+    })
+    .catch(error => console.log('Error:', error));
+}
+
+// Call this function every few seconds to capture frames and mark attendance
+setInterval(captureAndMarkAttendance, 5000);  // Capture every 5 seconds (adjust as needed)
 </script>
-{% endblock %}
+
 {% endblock %}
