@@ -1,8 +1,8 @@
-from flask import render_template, url_for, flash, redirect, request, jsonify, make_response, Response
+from flask import render_template, url_for, flash, redirect, request, jsonify, make_response
 from flask_login import login_user, current_user, logout_user, login_required
 from app import app, db, bcrypt
 from models import Admin, Student, Attendance
-from utils import encode_face, recognize_faces, markAttendance
+from utils import encode_face, recognize_faces
 import cv2
 import numpy as np
 from datetime import datetime
@@ -46,15 +46,20 @@ def mark_attendance():
 @login_required
 def process_attendance():
     if 'image' not in request.files:
-        return 'No image file', 400 
+        return 'No image file', 400
+    
     file = request.files['image']
     npimg = np.fromfile(file, np.uint8)
     img = cv2.imdecode(npimg, cv2.IMREAD_COLOR)
+    
     recognized_students = recognize_faces(img)
+    
     for student in recognized_students:
         attendance = Attendance(student_id=student.id)
         db.session.add(attendance)
+    
     db.session.commit()
+    
     return jsonify([student.name for student in recognized_students])
 
 @app.route('/student_management')
@@ -72,7 +77,7 @@ def add_student():
         image = request.files['image']
         
         if image:
-            face_encoding = encode_face(image, name)
+            face_encoding = encode_face(image)
             if face_encoding is not None:
                 student = Student(name=name, registration_number=registration_number, face_encoding=face_encoding)
                 db.session.add(student)
@@ -96,7 +101,7 @@ def edit_student(id):
         image = request.files['image']
         
         if image:
-            face_encoding = encode_face(image, student.name)
+            face_encoding = encode_face(image)
             if face_encoding is not None:
                 student.face_encoding = face_encoding
             else:
@@ -136,58 +141,3 @@ def export_attendance():
     output.headers["Content-Disposition"] = f"attachment; filename=attendance_{start_date.date()}_to_{end_date.date()}.csv"
     output.headers["Content-type"] = "text/csv"
     return output
-
-@app.route('/video_feed')
-@login_required
-def video_feed():
-    return Response(generate_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
-
-def generate_frames():
-    camera = cv2.VideoCapture(0)
-    if not camera.isOpened():
-        print("Error: Could not open camera")
-        return
-
-    try:
-        while True:
-            with app.app_context():
-                success, frame = camera.read()
-                if not success:
-                    print("Error: Could not read frame")
-                    break
-
-                # Perform face recognition
-                recognized_students = recognize_faces(frame)
-                
-                # Draw rectangles and names on the frame
-                for student in recognized_students:
-                    # Get face location from the student object
-                    top, right, bottom, left = student.face_location
-                    # Scale back up face locations since the frame we detected in was scaled to 1/4 size
-                    top *= 4
-                    right *= 4
-                    bottom *= 4
-                    left *= 4
-                    
-                    # Draw the box around the face
-                    cv2.rectangle(frame, (left, top), (right, bottom), (0, 255, 0), 2)
-                    
-                    # Draw a label with a name below the face
-                    cv2.rectangle(frame, (left, bottom - 35), (right, bottom), (0, 255, 0), cv2.FILLED)
-                    cv2.putText(frame, student.name, (left + 6, bottom - 6), cv2.FONT_HERSHEY_DUPLEX, 0.6, (255, 255, 255), 1)
-                    
-                    # Mark attendance for recognized student
-                    markAttendance(student.name)
-
-                # Convert the frame to JPEG format
-                ret, buffer = cv2.imencode('.jpg', frame)
-                if not ret:
-                    print("Error: Could not encode frame")
-                    break
-                    
-                frame = buffer.tobytes()
-                yield (b'--frame\r\n'
-                       b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
-    
-    finally:
-        camera.release()

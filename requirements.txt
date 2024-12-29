@@ -1,7 +1,5 @@
-flask
-flask-login
-flask-sqlalchemy 
-bcrypt
-opencv-python
+Flask==2.0.2
+Flask-SQLAlchemy==2.5.1
+Flask-Login==0.5.0
+Flask-Bcrypt==0.7.1
 face-recognition
-sqlite3
