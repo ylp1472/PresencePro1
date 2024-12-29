@@ -171,3 +171,43 @@ def gen():
 def video_feed():
     """Route to stream video feed."""
     return Response(gen(), mimetype='multipart/x-mixed-replace; boundary=frame')
+
+import base64
+from io import BytesIO
+from flask import request, jsonify
+import face_recognition
+import numpy as np
+import cv2
+
+@app.route('/process_attendance', methods=['POST'])
+@login_required
+def process_attendance():
+    # Get base64 image data from request
+    data = request.get_json()
+    image_data = data.get('image')
+
+    if not image_data:
+        return jsonify({'status': 'error', 'message': 'No image data provided.'}), 400
+
+    # Decode the base64 image data
+    image_data = image_data.split(',')[1]  # Remove the base64 header
+    img_bytes = base64.b64decode(image_data)
+
+    # Convert byte data to numpy array
+    npimg = np.frombuffer(img_bytes, np.uint8)
+    img = cv2.imdecode(npimg, cv2.IMREAD_COLOR)
+
+    # Detect faces and recognize them
+    recognized_students = recognize_faces(img)
+
+    # Mark attendance for each recognized student
+    for student in recognized_students:
+        attendance = Attendance(student_id=student.id)
+        db.session.add(attendance)
+
+    db.session.commit()
+
+    # Return list of recognized student names
+    recognized_names = [student.name for student in recognized_students]
+    return jsonify({'status': 'success', 'names': recognized_names})
+
