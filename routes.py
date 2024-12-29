@@ -147,7 +147,7 @@ import cv2
 from app import app
 
 # Initialize the video capture object (use 0 for the default webcam)
-video_capture = cv2.VideoCapture(0)
+video_capture = cv2.VideoCapture(1)
 
 def gen():
     """Generate frame by frame for video feed."""
